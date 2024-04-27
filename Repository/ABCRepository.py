@@ -17,14 +17,6 @@ class ABCRepository(ABC):
         pass
 
     @abstractmethod
-    def change_favorites(self, user_vk):
-        pass
-
-    @abstractmethod
-    def change_exceptions(self, user_vk):
-        pass
-
-    @abstractmethod
     def delete_favorites(self, user_vk):
         pass
 

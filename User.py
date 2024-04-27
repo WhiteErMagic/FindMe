@@ -1,12 +1,16 @@
 
 class User:
     def __init__(self):
+        self.user_id = 0
         self.first_name = ""
         self.last_name = ""
         self.age = 0
         self.gender = 0
         self.city = 0
         self.about_name = ""
+
+    def set_vk_id(self, arg: str):
+        self.set_vk_id = arg
 
     def set_first_name(self, arg: str):
         self.first_name = arg

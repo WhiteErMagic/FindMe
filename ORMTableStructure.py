@@ -1,9 +1,7 @@
 import sqlalchemy as sq
 from sqlalchemy.orm import declarative_base
 
-
 Base = declarative_base()
-
 
 # Класс, отвечающий за таблицу genders
 class Genders(Base):
@@ -340,7 +338,7 @@ class Exceptions(Base):
 
 
 # Создание таблиц в БД
-def create_tables(engine:sq.Engine) -> None:
+def form_tables(engine):
     
     """
     Назначение:
