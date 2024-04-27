@@ -215,11 +215,16 @@ class CheckDBSQL(ABCCheckDb):
                     
         return None
     
-    
-    def fill_tables(self, name_table:str, data:list, autoincriment_bool:bool) -> None:
-        
+
+
+    def fill_tables(self) -> None:
+
+        # Добавить запись в genders
+
+    # dev chechorm
+    # универсальный метод (заполняет одну таблицу)
+
         """
-        
         Позволяет заполнить таблицу
         
         name_table - название таблицы
