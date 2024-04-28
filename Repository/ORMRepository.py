@@ -1,28 +1,24 @@
 import os
 
-from sqlalchemy import create_engine
+import sqlalchemy
+from psycopg2 import errors
+from sqlalchemy import create_engine, exc, and_
+from sqlalchemy.orm import sessionmaker
 
-from User import User
-from CheckDB.CheckDBORM import
+from ORMTableStructure import get_class_cols
+from ORMTableStructure import Users, Favorites, Exceptions
 from Repository.ABCRepository import ABCRepository
-from ORMManipulation import get_tables, fill_tables, delete_table_values
+
 
 class ORMRepository(ABCRepository):
 
-    def get_engine(self):
+    def get_engine(self) -> sqlalchemy.Engine:
 
         """
         Формирует движок Sqlalchemy
 
-        Вводные параметры:
-        - dbname: наименование БД
-        - user: имя пользователя Postgres
-        - password: пароль пользователя Postgres
-        - host: хост
-        - port: порт
-
         Выводной параметр:
-        - движок Sqlalchemy
+        - движок sqlalchemy
         """
 
         dbname = 'findme'
@@ -31,100 +27,449 @@ class ORMRepository(ABCRepository):
         host = 'localhost'
         port = '5432'
 
+        # Создание DNS-ссылки и запуск движка
         dns_link = f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
         return create_engine(dns_link)
 
-    # иначе psycopg2.errors.ForeignKeyViolation
-    # def add_genders(self):
-    #
-    #     engine = self.get_engine()
-    #
-    #     fill_tables(engine, name_table='genders',
-    #                 data=[['Женщина'], ['Мужчина']],
-    #                 autoincriment_bool=True)
-    #
-    # # Иначе psycopg2.errors.ForeignKeyViolation11
-    # def add_cities(self):
-    #
-    #     engine = self.get_engine()
-    #
-    #     fill_tables(engine, name_table='cities',
-    #                 data=[[self.add_cities('My city')]],
-    #                 autoincriment_bool=True)
+
+    def start_add_table_session(self, dict_user:dict, class_object:object) -> None:
+
+        """
+        Инициирует сессию по добавлению новых значений в конкретную таблицу из БД
+
+        Вводные параметры:
+        - dict_user: словарь содержащий значения, которыми необходимо заполнить таблицу
+        - class_object: объект класса, содержащего структуру таблицы
+        """
+
+        # Запуск движка и инициация сессии
+        engine = self.get_engine()
+        session_class = sessionmaker(bind=engine)
+        session = session_class()
+
+        # Попытка добавления данных в таблицу
+        try:
+            model = class_object(**dict_user)
+            session.add(model)
+            session.commit()
+            session.close()
+
+        except (exc.IntegrityError,
+                errors.UniqueViolation,
+                exc.DataError,
+                errors.InvalidTextRepresentation,
+                errors.UndefinedTable,
+                exc.ProgrammingError,
+                exc.PendingRollbackError) as e:
+            print(f'Ошибка при добавлении следующего словаря {dict_user}')
+            print('Описание ошибки:', e, sep='\n')
+            pass
 
 
-    # Добавить пользователя в таблицу users
-    # Вытащить данные из класса User (словарь) == таблица (не name_table='users')
-    def add_user(self, dict_user):
+    def check_cols(self, col_list:list, dict_user:dict) -> bool:
 
-        # self.add_genders()
-        # self.add_cities()
+        """
+        Проверяет наличие всех нужных ключей словаря dict_user, отражающих столбцы
+        созданных таблиц. Проверка осуществляется относительно списка col_list.
+
+        Вводные параметры:
+        - col_list: список фактических столбцов конкретной таблицы, содержащейся в БД
+        - dict_user: словарь содержащий значения, которыми необходимо заполнить таблицу
+
+        Выводной параметр:
+        bool: True - все ключи словаря my_dict соответствуют col_list, False - наоборот
+        """
+
+        # Вывод ключей словаря
+        dict_keys = [k for k, _ in dict_user.items()]
+
+        # Проверка наличия всех нужных ключей словаря dict_user относительно списка col_list
+        for dict_key in dict_keys:
+            if dict_key not in col_list:
+                print(f'Ключ {dict_key} не найден в следующем словаре: {dict_user}')
+                return False
+
+        return True
+
+
+    def check_columns_type(self, col_types_list:list, dict_user:dict) -> bool:
+
+        """
+        Проверяет наличие корректных типов данных в столбцах.
+
+        Вводные параметры:
+        - col_types_list: список типов, указанных при составлении ORM классов
+        - dict_user: словарь, содержащий значения конкретной таблицы
+
+        Выводной параметр:
+        bool: True - все значения соответствуют указанным типам данных, False - наоборот
+        """
+
+        type_dict = {
+            'INTEGER': int,
+            'VARCHAR': str,
+            'BOOLEAN': bool
+        }
+
+        col_vals_list = [v for _, v in dict_user.items()]
+        for col_type, col_val in zip(col_types_list, col_vals_list):
+
+            type_name = []
+            for type_key, _ in type_dict.items():
+                if type_key in str(col_type):
+                    type_name.append(type_key)
+
+            if type_name:
+                type_name = type_name[0]
+
+                if type(col_val) is type_dict[type_name]:
+                    pass
+
+                else:
+                    try:
+                        raise TypeError(f"type({col_val}) != {type_name}")
+
+                    except(TypeError) as e:
+                        print('Ошибка ввода типа данных.', e, sep='\n')
+                        return False
+
+            else:
+                print(f'Не учтен следующий тип данных: {str(col_type)}')
+
+        return True
+
+
+    def get_table_values(self, class_object:object) -> list[dict]:
+
+        """
+        Выводит значения таблицы по объекту класса, прикрепленного к данной таблице
+
+        Вводимые параметры:
+        - class_object: объект класса, отвечающего за конкретную таблицу
+
+        Выводимый параметр:
+        - data_list: список словарей, содержащих значения таблицы
+        """
 
         engine = self.get_engine()
+        session_class = sessionmaker(bind=engine)
+        session = session_class()
 
-        class_obj = user({''})
+        # Название столбцов таблицы Users
+        col_list, _ = get_class_cols(class_object)
 
-        vk_id = class_obj.set_vk_id()
-        first_name = class_obj.first_name()
-        last_name = class_obj.last_name()
-        age = class_obj.age()
-        gender = class_obj.gender()
-        city = class_obj.city()
-        about_name = class_obj.about_name()
+        try:
+            # Попытка запуска запроса на получение данных
+            query = session.query(class_object).all()
 
-        data = [[vk_id, first_name, last_name, age, gender, city, about_name]]
-        fill_tables(engine, name_table='users',
-                    data=data,
-                    autoincriment_bool=False)
+            # Попытка получения данных конкретной таблицы
+            data_list = []
+            for obj in query:
+                data_dict = {}
+                for col in col_list:
+                    column_value = getattr(obj, col)
+                    data_dict[col] = column_value
+                data_list.append(data_dict)
+            return data_list
 
-    # Cловарь [{''}]
-    # Добавление избранной второй половинки
-    # user_id == user_vk (int): VK-идентификатор пользователя
-    # Favorites => словарь по руками
-    def add_favorites(self, dict_user):
+        except (errors.UndefinedTable,
+                exc.ProgrammingError) as e:
+            print(f'Ошибка вызова таблицы.')
+            print('Описание ошибки:', e, sep='\n')
+            pass
 
-        self.fill_genders()
-        self.fill_city()
 
-        data = [['Татьяна', 'Малахова', user_vk, 30, 2, 'sexyTanya',
-                 'photo1', 'photo2', 'photo3', 1]]
+    def do_autoincriment(self, dict_user:dict, class_object:object) -> dict:
 
-        engine = self.get_engine()
+        """
+        Проводит автоинкримент в отношении данных, содержащихся в dict_user
 
-        fill_tables(engine, name_table='favorites',
-                    data=data,
-                    autoincriment_bool=True)
+        Вводимые параметры:
+        - dict_user: словарь, содержащий значения конкретной таблицы
+        - class_object: класс, относящийся к конкретной таблице
 
-    # Добавление человека в черный список
-    def add_exceptions(self, dict_user):
+        Выводимые параметры:
+        - dict_user: обновленный словарь, учитывающий автоинкримент
+        """
 
-        self.fill_genders()
-        self.fill_city()
+        # Инициации сессии по вызову таблицы, принадлежащей к объекту класса class_object
+        get_table_result = self.get_table_values(class_object)
 
-        data = [['Марина', 'Захарова', user_vk, 50, 2, 'sexyTanya',
-                 'photo1', 'photo2', 'photo3', 1]]
+        if get_table_result:
+            new_id = get_table_result[-1].get('id') + 1
+        else:
+            new_id = 1
 
-        engine = self.get_engine()
+        dict_user.update({'id': new_id})
+        return dict_user
 
-        fill_tables(engine, name_table='exceptions',
-                    data=data,
-                    autoincriment_bool=True)
 
-    # Удаление человека из избранного
-    # user_id == user_vk (int): идентификатор пользователя <=> VK-идентификатор пользователя
-    # id, id фаворит
-    def delete_favorites(self, dict_user):
-        pass
+    def add_user(self, list_dict:list[dict]) -> list[dict]:
 
-    # Удаление человека из черного списка
-    def delete_exceptions(self, dict_user):
-        pass
+        """
+        Добавляет пользователя в таблицу users
 
-    # Получение списка словарей по user_id
-    # user_id == user_vk (int): идентификатор пользователя <=> VK-идентификатор пользователя
-    def get_favorites(self, user_id):
-        pass
+        Вводной параметр:
+        - list_dict: список словарей с данными пользователя (таблица users)
+
+        Выводной параметр:
+        - list[dict]: список словарей, содержащий данные таблицы users
+        """
+
+        for dict_user in list_dict:
+
+            # Название столбцов таблицы users
+            col_list, col_types_list = get_class_cols(Users)
+
+            # Проверка cоответствия ключей dict_user названию столбцов из col_list
+            if self.check_cols(col_list, dict_user):
+
+                # Проверка cоответствия значений dict_user нужным типам данных
+                if self.check_columns_type(col_types_list, dict_user):
+
+                    # Запуск движка и инициация сессии
+                    self.start_add_table_session(dict_user, Users)
+
+        return self.get_table_values(Users)
+
+
+    def get_favorites(self, user_id:int) -> list[dict]:
+
+        """
+        Выводит всех избранных пользователем людей (таблица favorites)
+
+        Вводной параметр:
+        - user_id: идентификатор пользователя ВК
+
+        Выводной параметр:
+        - list[dict]: список словарей, содержащий данные таблицы favorites
+        """
+
+        get_table_result = self.get_table_values(Favorites)
+
+        if get_table_result:
+            data = []
+            for dict_data in get_table_result:
+                id = dict_data.get('user_id', None)
+                if id is not None and id == user_id:
+                    data.append(dict_data)
+            return data
+
+        else:
+            return []
+
 
     # Получение списка словарей для user_id
-    def get_exceptions(self, user_id):
-        pass
+    def get_exceptions(self, user_id:int) -> list[dict]:
+
+        """
+        Выводит всех людей, находящихся в черном списке пользователя (таблица exceptions)
+
+        Вводной параметр:
+        - user_id: идентификатор пользователя ВК
+
+        Выводной параметр:
+        - list[dict]: список словарей, содержащий данные таблицы exceptions
+        """
+
+        get_table_result = self.get_table_values(Exceptions)
+
+        if get_table_result:
+            data = []
+            for dict_data in get_table_result:
+                id = dict_data.get('user_id', None)
+                if id is not None and id == user_id:
+                    data.append(dict_data)
+            return data
+
+        else:
+            return []
+
+
+    def add_favorites(self, list_dict:list[dict]) -> list[dict]:
+
+        """
+        Добавляет избранного человека в таблицу favorites
+
+        Вводной параметр:
+         - list_dict: список словарей с данными (таблица favorites)
+
+        Выводной параметр:
+        - list[dict]: список словарей, содержащий данные таблицы favorites
+        """
+
+        # Название столбцов таблицы favorites
+        col_list, col_types_list = get_class_cols(Favorites)
+
+        for dict_user in list_dict:
+
+            # Проверка cоответствия ключей dict_user названию столбцов из col_list
+            if self.check_cols(col_list, dict_user):
+
+                # Проверка cоответствия значений dict_user нужным типам данных
+                if self.check_columns_type(col_types_list, dict_user):
+
+                    # user_id - пользователь, profile - профиль второй половинки
+                    user_id = dict_user.get('user_id')
+                    profile = dict_user.get('profile')
+
+                    # Проверка наличия пары "Пользователь - Вторая половинка" в таблице favorites
+                    search_result = self.get_favorites(user_id)
+                    repeat_list = [dict_pair for dict_pair in search_result if dict_pair.get('profile') == profile]
+
+                    # Учет отсутствия поаторов в паре "Пользователь - Вторая половинка"
+                    if not repeat_list:
+
+                        # Проведение автоинкримента (в данном случае он нужен, т.к. учитываются ID наблюдения)
+                        dict_user = self.do_autoincriment(dict_user, Favorites)
+
+                        # Запуск движка и инициация сессии
+                        self.start_add_table_session(dict_user, Favorites)
+
+                    else:
+                        print('Указанная пара "Пользователь - Логин второй половинки" уже указана в таблице')
+
+        return self.get_table_values(Favorites)
+
+
+    # Добавление человека в черный список
+    def add_exceptions(self, list_dict:list[dict]) -> list[dict]:
+
+        """
+        Добавляет человека в черный список (таблица exceptions)
+
+        Вводной параметр:
+        - list_dict: список словарей с данными (таблица exceptions)
+
+        Выводной параметр:
+        - list[dict]: список словарей, содержащий данные таблицы exceptions
+        """
+
+        # Название столбцов таблицы exceptions
+        col_list, col_types_list = get_class_cols(Exceptions)
+
+        for dict_user in list_dict:
+
+            # Проверка cоответствия ключей dict_user названию столбцов из col_list
+            if self.check_cols(col_list, dict_user):
+
+                # Проверка cоответствия значений dict_user нужным типам данных
+                if self.check_columns_type(col_types_list, dict_user):
+
+                    # user_id - пользователь, profile - профиль второй половинки
+                    user_id = dict_user.get('user_id')
+                    profile = dict_user.get('profile')
+
+                    # Проверка наличия пары "Пользователь - Вторая половинка" в таблице favorites
+                    search_result = self.get_exceptions(user_id)
+                    repeat_list = [dict_pair for dict_pair in search_result if dict_pair.get('profile') == profile]
+
+                    # Учет отсутствия поаторов в паре "Пользователь - Вторая половинка"
+                    if not repeat_list:
+
+                        # Проведение автоинкримента (в данном случае он нужен, т.к. учитываются ID наблюдения)
+                        dict_user = self.do_autoincriment(dict_user, Exceptions)
+
+                        # Запуск движка и инициация сессии
+                        self.start_add_table_session(dict_user, Exceptions)
+
+                    else:
+                        print('Указанная пара "Пользователь - Логин второй половинки" уже указана в таблице')
+
+        return self.get_table_values(Exceptions)
+
+
+    def delete_favorites(self, list_dict:list[dict]) -> list[dict]:
+
+        """
+        Удаляет человека из избранного списка пользователя (таблица favorites)
+
+        Вводной параметр:
+         - list_dict: список словарей с данными (таблица favorites)
+
+        Выводной параметр:
+        - list[dict]: список словарей, содержащий данные таблицы favorites
+        """
+
+        # Запуск движка
+        engine = self.get_engine()
+
+        for dict_user in list_dict:
+
+            # Получения ID пользователя ВК и профиля
+            user_id = dict_user.get('user_id')
+            profile = {k: v for k, v in dict_user.items() if k != 'id'}.get('profile')
+
+            # Инициация сессии
+            session_class = sessionmaker(bind=engine)
+            session = session_class()
+
+            try:
+                # Формирование запроса
+                delete_query = session.query(Favorites). \
+                    where(and_(Favorites.profile == profile,
+                               Favorites.user_id == user_id)).all()
+
+            except (errors.UndefinedFunction,
+                    sqlalchemy.exc.ProgrammingError,
+                    errors.NumericValueOutOfRange,
+                    sqlalchemy.exc.DataError):
+                delete_query = []
+
+            # Условие наличия запроса
+            if delete_query:
+                for query in delete_query:
+                    # Удаление данных и завершение сессии
+                    session.delete(query)
+                    session.commit()
+                    session.close()
+
+        return self.get_table_values(Favorites)
+
+
+    def delete_exceptions(self, list_dict:list[dict]) -> list[dict]:
+
+        """
+        Удаляет человека из черного списка пользователя (таблица exceptions)
+
+        Вводной параметр:
+         - list_dict: список словарей с данными (таблица exceptions)
+
+        Выводной параметр:
+        - list[dict]: список словарей, содержащий данные таблицы exceptions
+        """
+
+        # Запуск движка
+        engine = self.get_engine()
+
+        for dict_user in list_dict:
+
+            # Получения ID пользователя ВК и профиля
+            user_id = dict_user.get('user_id')
+            profile = {k: v for k, v in dict_user.items() if k != 'id'}.get('profile')
+
+            # Инициация сессии
+            session_class = sessionmaker(bind=engine)
+            session = session_class()
+
+            try:
+                # Формирование запроса
+                delete_query = session.query(Exceptions). \
+                    where(and_(Exceptions.profile == profile,
+                               Exceptions.user_id == user_id)).all()
+
+            except (errors.UndefinedFunction,
+                    sqlalchemy.exc.ProgrammingError,
+                    errors.NumericValueOutOfRange,
+                    sqlalchemy.exc.DataError):
+                delete_query = []
+
+            # Условие наличия запроса
+            if delete_query:
+                for query in delete_query:
+                    # Удаление данных и завершение сессии
+                    session.delete(query)
+                    session.commit()
+                    session.close()
+
+        return self.get_table_values(Exceptions)

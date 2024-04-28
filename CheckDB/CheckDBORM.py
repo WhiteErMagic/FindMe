@@ -1,13 +1,12 @@
 import os
-import inspect
 
 import sqlalchemy as sq
 from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 
-import ORMTableStructure
-from ORMTableStructure import form_tables
+from ORMTableStructure import form_tables, get_table_list
 from CheckDB.ABCCheckDb import ABCCheckDb
+
 
 class CheckDBORM(ABCCheckDb):
 
@@ -20,7 +19,7 @@ class CheckDBORM(ABCCheckDb):
         - движок Sqlalchemy
         """
 
-        dbname = 'postgres'
+        dbname = 'findme'
         user = os.getenv(key='USER_NAME_DB')
         password = os.getenv(key='USER_PASSWORD_DB')
         host = 'localhost'
@@ -49,6 +48,7 @@ class CheckDBORM(ABCCheckDb):
         else:
             return True
 
+
     def create_db(self):
 
         """
@@ -66,6 +66,7 @@ class CheckDBORM(ABCCheckDb):
         if not self.exists_db():
             create_database(engine.url)
 
+
     def exists_tables(self):
 
         """
@@ -79,17 +80,13 @@ class CheckDBORM(ABCCheckDb):
         """
 
         engine = self.get_engine()
-
-        table_list = []
-        for name, obj in inspect.getmembers(ORMTableStructure):
-            if inspect.isclass(obj):
-                if name != 'Base':
-                    table_list.append(obj.__tablename__)
+        table_list = get_table_list()
 
         for table_name in table_list:
             if not sq.inspect(engine).has_table(table_name):
                 return False
         return True
+
 
     def create_tables(self):
 
@@ -104,6 +101,7 @@ class CheckDBORM(ABCCheckDb):
 
         if not self.exists_tables():
             form_tables(engine)
+
 
     def fill_tables(self):
         pass
