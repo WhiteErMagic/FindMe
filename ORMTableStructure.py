@@ -363,7 +363,7 @@ def get_table_list() -> list:
     for table_name, obj in inspect.getmembers(sys.modules[__name__]):
         if inspect.isclass(obj):
             if table_name != 'Base':
-                table_list.append(table_name)
+                table_list.append(obj.__table__.name)
     return table_list
 
 
