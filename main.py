@@ -1,78 +1,83 @@
-import json
-
-import vk_api
+from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkLongPoll, VkEventType
+import vk_api
+
 from vk_api.utils import get_random_id
+from search_criteria import create_user_criteria
 
-#from User import User
+from VKRepository import VKRepository
+from quesrionnarie import get_user_response, create_user_profile
 
-token = "vk1.a.BIz9EanDLhQLtuSTT5mVGSTvU7mIycKbGSzDDIVisPwVFO7VwFuglk4c8Z87XC1M0dS_fkkVsCll42WTCH5toPeEabcYTxCz6C7gqoLgTEKd6DrSD9uU0tofY8S3AhXZp_1Ln18-CKTWtrRn81IG18MBY2KAMrAIE3L_DuKKkNiW3sKzPQkdScH722rzshSP5asvFd_daoETjY_-2CzvSg"
-authorize = vk_api.VkApi(token=token)
-longpoll = VkLongPoll(authorize)
-def get_user_response(vk_session, user_id, message):
-    vk_session.method('messages.send', {
+session = vk_api.VkApi(token='vk1.a.BIz9EanDLhQLtuSTT5mVGSTvU7mIycKbGSzDDIVisPwVFO7VwFuglk4c8Z87XC1M0dS_fkkVsCll42WTCH5toPeEabcYTxCz6C7gqoLgTEKd6DrSD9uU0tofY8S3AhXZp_1Ln18-CKTWtrRn81IG18MBY2KAMrAIE3L_DuKKkNiW3sKzPQkdScH722rzshSP5asvFd_daoETjY_-2CzvSg')
+longpoll = VkLongPoll(session)
+
+
+def send_message(user_id, message, keyboard=None):
+    post = {
         'user_id': user_id,
         'message': message,
         'random_id': get_random_id()
-    })
-    for event in VkLongPoll(vk_session).listen():
-        if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
-            return event.text
-
-# def get_user_photo(vk_session, user_id, message):
-#     vk_session.method('messages.send', {
-#         'user_id': user_id,
-#         'message': message,
-#         'random_id': get_random_id()
-#     })
-#     for event in VkLongPoll(vk_session).listen():
-#         if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.attachments:
-#             return event.attachments[0]['photo']['photo_130']
-
-def create_user_profile(user_id, vk_session):
-    user_info = {}
-    #user = User()
-
-    questions = {
-
-        "first_name": "Как тебя зовут?",
-        "last_name": "Отлично! А какая у тебя фамилия?",
-        "age": "Прекрасно! Сколько тебе лет?",
-        "city": "Замечательный возраст , мы почти закончили! В каком городе ты живешь?",
-        "about_me": "Прекрасно! Можешь кратко рассказать о своей жизни",
     }
+    if keyboard:
+        post['keyboard'] = keyboard.get_keyboard()
+    session.method('messages.send', post)
 
-    for key, question in questions.items():
-        user_info[key] = get_user_response(vk_session, user_id, question) # Получаем ответы пользователя с помощью функции get_user_response
 
-        # Запись в JSON-файл
-    try:
-        with open('questionnaires.json', 'r+') as f:
-            try:
-                data = json.load(f)
-            except json.JSONDecodeError:
-                data = {}
+if __name__ == '__main__':
+    vk_reposiroty = VKRepository()
+    for event in VkLongPoll(session).listen():
+        if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
+            text = event.text.lower()
+            user_id = event.user_id
+            user_info = session.method('users.get', {'user_ids': user_id})[0]
+            first_name = user_info['first_name']
+            # first_name = vk_reposiroty.get_user_first_name(user_id)
+            keyboard = VkKeyboard(one_time=True)
+            keyboard.add_button('start', color=VkKeyboardColor.PRIMARY)
 
-            print("Data before deletion:", data)  # Вывод data до удаления
+            if text == "start":
+                keyboard = VkKeyboard(one_time=True)
+                keyboard.add_button('Хочу зарегистрироваться', color=VkKeyboardColor.POSITIVE)
+                send_message(user_id, f'🚀 Привет, {first_name}!  👋  Я – бот, который экономит '
+                                      f'твое время и помогает найти любовь быстро и легко! '
+                                      f' ⏱️  Хочешь зарегистрироваться и начать поиск своей второй половинки?  💖',
+                             keyboard)
+            if text == "хочу зарегистрироваться":
+                keyboard = VkKeyboard(one_time=True)
+                keyboard.add_button('Создание анкеты', color=VkKeyboardColor.POSITIVE)
+                send_message(user_id,
+                             f'Здорово! 😊  Чтобы подобрать тебе идеальную пару, мне потребуется немного информации о твоих предпочтениях.'
+                             f' 🔐  Не волнуйся, все данные останутся конфиденциальными. 😉', keyboard)
 
-            # Удаление предыдущей анкеты, если она существует
-            if user_id in data:
-                del data[user_id]
-                print(f"Deleted profile for user {user_id}")
-            else:
-                print(f"No previous profile found for user {user_id}")
+            if text == "создание анкеты":
+                create_user_profile(user_id, session)
 
-            print("Data after deletion:", data)  # Вывод data после удаления
 
-            data[user_id] = user_info
-            f.seek(0)
-            json.dump(data, f, indent=4)
+                keyboard = VkKeyboard(one_time=False)
+                keyboard.add_button('Создать критерии', color=VkKeyboardColor.POSITIVE)
+                keyboard.add_button('Поиск', color=VkKeyboardColor.POSITIVE)
+                keyboard.add_line()
+                keyboard.add_button('Изменить анкету', color=VkKeyboardColor.NEGATIVE)
 
-    except FileNotFoundError:  # Если JSON-файл не существует
-        with open('questionnaires.json', 'w') as f:
-            json.dump({user_id: user_info}, f, indent=4)
+                send_message(user_id, 'Ура, твоя анкета создана! 🥳 \n\n'
+                                      'Можешь сразу начать поиск по умолчанию, который использует твой возраст и город, нажав "Поиск". \n\n'
+                                      'А если хочешь что-то особенное, нажми "Создать критерии" и мы найдём тебе идеальных кандидатов! 💥 \n'
+                                      'Кстати, ты всегда можешь изменить свою анкету в разделе "Изменить анкету".'
+                                      'Желаем тебе найти свою родственную душу! ❤️🌸   ', keyboard)
 
-    print(f'Анкета пользователя {user_id} сохранена (предыдущая анкета удалена)!')
-    print(f'Анкета пользователя {user_id}: {user_info}')
-    for key, value in user_info.items():
-        print(f'{key}: {value}')
+
+
+            if event.text == "Создать критерии":
+                create_user_criteria(user_id, session)
+                send_message(user_id, 'Критерии созданы! 👍 \n\n')
+
+
+            if event.text == "Поиск":
+                send_message(user_id, 'Делаю что-то с поиском! 👍 \n\n')
+
+                # users_list = vk_repository.get_users_list(criteria_dict)
+                # вывод первого кандидата  фото имя фамилия возраст город
+
+            if event.text == "Изменить анкету":
+                create_user_profile(user_id, session)
+                send_message(user_id, 'Анкета изменена! 🥳 \n\n')
