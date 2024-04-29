@@ -61,18 +61,21 @@ if __name__ == '__main__':
                                       'Кстати, ты всегда можешь изменить свою анкету в разделе "Изменить анкету".'
                                       'Желаем тебе найти свою родственную душу! ❤️🌸   ', keyboard)
 
-            if text == "Создать критерии":
-                keyboard = VkKeyboard(one_time=False)
-                keyboard.add_button('Изменить критерии', color=VkKeyboardColor.POSITIVE)
-                create_user_criteria(user_id, session)
-                send_message(user_id, 'Критерии созданы! 🥳 В любой момент вы можете их изменить нажам на кнопку "Изменить критерии"\n\n', keyboard)
-            if text == "Изменить анкету":
-                create_user_profile( user_id, session)
-                send_message(user_id, 'Анкета изменена! 🥳 \n\n')
-                    # кнопка фаворитов  черный список
-                    # кнопка вперед
+            for event2 in VkLongPoll(session).listen():
 
-            if text == "Поиск":
-                pass
-                    #users_list = vk_repository.get_users_list(criteria_dict)
-                    # вывод первого кандидата  фото имя фамилия возраст город
+                if event2.type == VkEventType.MESSAGE_NEW and event2.to_me and event2.text:
+
+                    if event2.text == "Создать критерии":
+                        create_user_criteria(user_id, session)
+                        send_message(user_id, 'Критерии созданы! 👍 \n\n')
+
+
+                    if event2.text == "Поиск":
+                        send_message(user_id, 'Делаю что-то с поиском! 👍 \n\n')
+
+                        # users_list = vk_repository.get_users_list(criteria_dict)
+                        # вывод первого кандидата  фото имя фамилия возраст город
+
+                    if event2.text == "Изменить анкету":
+                        create_user_profile(user_id, session)
+                        send_message(user_id, 'Анкета изменена! 🥳 \n\n')
