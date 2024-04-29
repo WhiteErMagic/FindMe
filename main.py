@@ -4,7 +4,7 @@ import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.utils import get_random_id
 
-from User import User
+#from User import User
 
 token = "vk1.a.BIz9EanDLhQLtuSTT5mVGSTvU7mIycKbGSzDDIVisPwVFO7VwFuglk4c8Z87XC1M0dS_fkkVsCll42WTCH5toPeEabcYTxCz6C7gqoLgTEKd6DrSD9uU0tofY8S3AhXZp_1Ln18-CKTWtrRn81IG18MBY2KAMrAIE3L_DuKKkNiW3sKzPQkdScH722rzshSP5asvFd_daoETjY_-2CzvSg"
 authorize = vk_api.VkApi(token=token)
@@ -31,7 +31,7 @@ def get_user_response(vk_session, user_id, message):
 
 def create_user_profile(user_id, vk_session):
     user_info = {}
-    user = User()
+    #user = User()
 
     questions = {
 

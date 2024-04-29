@@ -1,14 +1,16 @@
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkLongPoll, VkEventType
 import vk_api
+
 from vk_api.utils import get_random_id
+from search_criteria import create_user_criteria
 
 from VKRepository import VKRepository
 from  main import get_user_response, create_user_profile
-from search_criteria import create_search_criteria
+
 session = vk_api.VkApi(token='vk1.a.BIz9EanDLhQLtuSTT5mVGSTvU7mIycKbGSzDDIVisPwVFO7VwFuglk4c8Z87XC1M0dS_fkkVsCll42WTCH5toPeEabcYTxCz6C7gqoLgTEKd6DrSD9uU0tofY8S3AhXZp_1Ln18-CKTWtrRn81IG18MBY2KAMrAIE3L_DuKKkNiW3sKzPQkdScH722rzshSP5asvFd_daoETjY_-2CzvSg')
 longpoll = VkLongPoll(session)
-def send_message(user_id, message, keyboard=None):
+def send_message(user_id, message, keyboard= None):
     post = {
         'user_id': user_id,
         'message': message,
@@ -44,11 +46,11 @@ if __name__ == '__main__':
 
             if text == "создание анкеты":
                 keyboard = VkKeyboard(one_time=False)
-                keyboard = VkKeyboard(one_time=False)
-                keyboard = VkKeyboard(one_time=False)
+
 
 
                 keyboard.add_button('Создать критерии', color=VkKeyboardColor.POSITIVE)
+
                 keyboard.add_button('Поиск', color=VkKeyboardColor.POSITIVE)
                 keyboard.add_line()
                 keyboard.add_button('Изменить анкету', color=VkKeyboardColor.NEGATIVE)
@@ -59,13 +61,18 @@ if __name__ == '__main__':
                                       'Кстати, ты всегда можешь изменить свою анкету в разделе "Изменить анкету".'
                                       'Желаем тебе найти свою родственную душу! ❤️🌸   ', keyboard)
 
-                if text == "Создать критерии":
-                    create_search_criteria(user_id, session)
-                    send_message(user_id, 'Критерии созданы! 👍 \n\n')
+            if text == "Создать критерии":
+                keyboard = VkKeyboard(one_time=False)
+                keyboard.add_button('Изменить критерии', color=VkKeyboardColor.POSITIVE)
+                create_user_criteria(user_id, session)
+                send_message(user_id, 'Критерии созданы! 🥳 В любой момент вы можете их изменить нажам на кнопку "Изменить критерии"\n\n', keyboard)
+            if text == "Изменить анкету":
+                create_user_profile( user_id, session)
+                send_message(user_id, 'Анкета изменена! 🥳 \n\n')
+                    # кнопка фаворитов  черный список
+                    # кнопка вперед
 
-                elif text == "Поиск":
-                    # users_list = vk_repository.get_users_list(criteria_dict)
+            if text == "Поиск":
+                pass
+                    #users_list = vk_repository.get_users_list(criteria_dict)
                     # вывод первого кандидата  фото имя фамилия возраст город
-                elif text == "Изменить анкету":
-                    create_user_profile()
-                    send_message(user_id, 'Анкета изменена! 🥳 \n\n')
