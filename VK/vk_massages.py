@@ -11,7 +11,12 @@ edit_dict = {
             'city': 'город'
             }
 
-
+edit_dict_criteria = {
+    'sex': 'Пол',
+    'age_from': 'Возраст от',
+    'age_to': 'Возраст до',
+    'city': 'Город',
+}
 def get_hello_massage(user_id, first_name):
     text_message = f'🚀 Привет, {first_name}!  👋  Я – бот, который экономит ' \
     f'твое время и помогает найти любовь быстро и легко! ' \
@@ -79,8 +84,6 @@ def get_registration_massage(user: User):
     }
 
     return message
-
-
 def get_edit_massage(user_id, str_arg):
     text_message = f'Задайте новое значение ' + edit_dict[str_arg] + ':'
     if str_arg == 'gender':
@@ -89,6 +92,54 @@ def get_edit_massage(user_id, str_arg):
     keyboard = VkKeyboard(one_time=True)
     keyboard.add_button('Отмена', color=VkKeyboardColor.NEGATIVE,
                         payload={"action_cancel": "cancel_edit_anketa"})
+
+    message = {
+        'user_id': user_id,
+        'message': text_message,
+        'random_id': get_random_id(),
+        'keyboard': keyboard.get_keyboard()
+    }
+
+    return message
+
+# ---------------------------------------
+def get_criteria_massage(user: User):
+    text_message = f'Анкета:\n' \
+                   f'новое значение - нажать кнопку\n'
+    settings = dict(one_time=False, inline=True)
+    keyboard = VkKeyboard(**settings)
+    keyboard.add_button(label='Пол: ' + user.get_sex_criteria(), color=VkKeyboardColor.SECONDARY,
+                       payload={"action_edit": "gender"})
+    keyboard.add_button(label='Возраст от: ' + user.get_age_to() , color=VkKeyboardColor.SECONDARY,
+                       payload={"action_edit": "age_from"})
+    keyboard.add_button(label='Возраст до: ' + user.get_age_from() , color=VkKeyboardColor.SECONDARY,
+                       payload={"action_edit": "age_to"})
+    keyboard.add_line()
+    keyboard.add_button(label='Город: ' + user.get_city_criteria(), color=VkKeyboardColor.SECONDARY,
+                        payload={"action_edit": "city"})
+    keyboard.add_button(label='Семейное положение: ' + user.get_relation_criteria(), color=VkKeyboardColor.SECONDARY,
+                        payload={"action_edit": "relation"})
+    keyboard.add_button(label='Сохранить критерии', color=VkKeyboardColor.POSITIVE,
+                        payload={"action_save": "save_criteria"})
+
+    message = {
+        'user_id': user.get_user_id(),
+        'message': text_message,
+        'random_id': get_random_id(),
+        'keyboard': keyboard.get_keyboard(),
+        'peer_ids': user.get_user_id()
+    }
+
+    return message
+
+def get_edit_massage_сriteria(user_id, str_arg):
+    text_message = f'Задайте новое значение ' + edit_dict[str_arg] + ':'
+    if str_arg == 'sex':
+        text_message += f'1 - Женщина, 2 - Мужчина'
+
+    keyboard = VkKeyboard(one_time=True)
+    keyboard.add_button('Отмена', color=VkKeyboardColor.NEGATIVE,
+                        payload={"action_cancel": "cancel_edit_criteria"})
 
     message = {
         'user_id': user_id,

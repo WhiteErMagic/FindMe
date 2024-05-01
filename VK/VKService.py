@@ -43,9 +43,10 @@ class VKService:
 
         criteria_dict = {
             'sex': 1,
-            'status': 1,
+            'relation': 1,
             'age_from': 20,
             'age_to': 45,
+            'city': 1,
             'has_photo': 1,
             'fields': 'about,sex'
         }

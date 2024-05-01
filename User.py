@@ -11,6 +11,14 @@ class User:
         self.__id_msg_edit_anketa_id = -1
         self.__step = None
 
+
+        self.__sex = 0
+        self.__age_to = 0
+        self.__age_from = 0
+        self.__city_criteria = None
+        self.__relation_criteria = 0
+        self.__step_criteria = None
+
     def get_user_id(self):
         return self.__id
 
@@ -74,4 +82,59 @@ class User:
             'gender': self.__gender,
             'city': self.__city['id'],
             'about_me': self.__about_me
+        }
+#-------------------------------------------------------------------------------------
+
+    def set_sex_criteria(self, arg: int):
+        self.__sex = arg
+
+    def get_sex_criteria(self):
+        return 'Женщина' if self.__gender == 1 else 'Мужчина'
+
+    def set_age_to(self, arg: int):
+        self.__age_to = arg
+
+    def get_age_to(self):
+        return self.__age_to
+
+    def set_age_from(self, arg: int):
+        self.__age_from = arg
+
+    def get_age_from(self):
+        return self.__age_from
+
+    def set_city_criteria(self, arg: int):
+        self.__city_criteria = arg
+
+    def get_city_criteria(self):
+        return self.__city_criteria
+
+    def set_relation_criteria(self, arg: int):
+        self.__relation_criteria = arg
+
+    def get_relation_criteria(self):
+        if self.__relation_criteria == 1:
+            return 'Не женат/не замужем'
+        elif self.__relation_criteria == 6:
+            return 'В активном поиске'
+
+    def set_id_msg_edit_criteria(self, arg: int):
+        self.__id_msg_edit_criteria_id = arg
+
+    def get_id_msg_edit_criteria(self):
+        return self.__id_msg_edit_criteria_id
+
+    def set_step_criteria(self, arg: str):
+        self.__step_criteria = arg
+
+    def get_step_criteria(self):
+        return self.__step_criteria
+
+    def to_dict_criteria(self):
+        return {
+            'sex': self.__sex,
+            'age_to': self.__age_to,
+            'age_from': self.__age_from,
+            'city_criteria': self.__city_criteria,
+            'relation_criteria': self.__relation_criteria
         }

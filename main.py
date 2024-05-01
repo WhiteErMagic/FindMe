@@ -15,6 +15,8 @@ token_api=os.getenv(key='ACCESS_TOKEN_API')
 vk_session = vk_api.VkApi(token=token)
 longpoll = VkLongPoll(vk_session)
 users_list = {}
+criteria_list = {}
+
 
 
 def handle_start(user_id):
@@ -65,6 +67,32 @@ def send_ask_edit(user: User, str_arg):
     send_message(message_edit)
 
 
+# --------------------------------------------------------------------------
+def handle_start_criteria(user: User):
+    asd= 1
+
+def handle_edit_criteria(user: User):
+    """
+       Обработчмк нажатия кнопки "Создать критерии"
+       :param user: параметры пользователя
+       :return: id сообщения при отправке
+       """
+    if user.get_id_msg_edit_criteria() > -1:
+        vk_session.method('messages.delete', {'message_ids': user.get_id_msg_edit_criteria(), 'delete_for_all': 1})
+    message_edit_criteria = ms.get_criteria_massage(user)
+    return send_message(message_edit_criteria)
+def send_ask_edit_criteria(user: User, str_arg):
+    """
+    Отправка предложения заполнить значение критериев
+    и установка текущего шага для редактирования критерий пользователя
+    :param user: параметры пользователя
+    :param str_arg: шаг
+    """
+    user.set_step_criteria(str_arg)
+    message_edit = ms.get_edit_massage(user.get_user_id(), str_arg)
+    send_message(message_edit)
+
+
 def send_message(message):
     """
     Отправка сформированного сообщения
@@ -93,7 +121,23 @@ def set_param_anketa(user: User, text: str):
         city = vk_srv.get_city_by_name(token=token_api, text=text)
         user.set_city(city)
 
-
+def set_param_criteria(user: User, text: str):
+    """
+        Запись текущего пункта критериев в класс User
+        :param user: параметры пользователя
+        :param text: значение параметра
+        """
+    if user.get_step_criteria() == 'sex':
+        user.set_sex_criteria(int(text))
+    elif user.get_step_criteria() == 'age_from':
+        user.set_age_from(int(text))
+    elif user.get_step_criteria() == 'age_to':
+        user.set_age_to(int(text))
+    elif user.get_step_criteria() == 'city':
+        city = vk_srv.get_city_by_name(token=token_api, text=text)
+        user.set_city_criteria(city)
+    elif user.get_step_criteria() == 'relation':
+        user.set_relation_criteria(int(text))
 if __name__ == '__main__':
     # сheckDB = CheckDBSQL()
     # if сheckDB.check_db():
@@ -121,19 +165,57 @@ if __name__ == '__main__':
 
                 # Сохранить анкету
                 elif json.loads(event.extra_values.get('payload')).get('action_save'):
-                    print(users_list[event.user_id].to_dict())
+                    a = 1
 
+                # Отмена текущего режима
+                elif json.loads(event.extra_values.get('payload')).get('action_cancel'):
+                    a = 1
+
+                # Отмена редактирования пункта анкеты
+                if json.loads(event.extra_values.get('payload')).get('action_cancel') == 'cancel_edit_anketa':
+                    users_list[event.user_id].set_step(None)
+                    message_id = handle_registration(users_list[event.user_id])
+                    users_list[event.user_id].set_id_msg_edit_anketa(message_id)
+
+            # Получение данных для текущего шага
+            # elif not users_list[event.user_id].get_step() is None:
+            #     set_param_anketa(users_list[event.user_id], text)
+            #     message_id = handle_registration(users_list[event.user_id])
+            #     users_list[event.user_id].set_id_msg_edit_anketa(message_id)
+
+
+
+#-------------------------------------------------------------------------------------------
+            # Создание критериев
+            elif text == "Создать Критерии":
+                message_id  = handle_edit_criteria(users_list[event.user_id])
+                users_list[event.user_id].set_id_msg_edit_criteria(message_id)
+            # нажатие на inline кнопки
+            elif event.extra_values.get('payload'):
+
+                # Редактирование пунктов критериев
+                if json.loads(event.extra_values.get('payload')).get('action_edit'):
+                    str_arg = json.loads(event.extra_values.get('payload')).get('action_edit')
+                    send_ask_edit_criteria(users_list[event.user_id], str_arg)
+
+                # Сохранить критерии
+                elif json.loads(event.extra_values.get('payload')).get('action_save'):
+
+                    a = 1
+                    # print(users_list[event.user_id].to_dict())
+                    # точка входа в список создания критериев
+                    # + редактировать критерии поиска, словарь критерий
                 # Отмена текущего режима
                 elif json.loads(event.extra_values.get('payload')).get('action_cancel'):
 
                     # Отмена редактирования пункта анкеты
                     if json.loads(event.extra_values.get('payload')).get('action_cancel') == 'cancel_edit_anketa':
                         users_list[event.user_id].set_step(None)
-                        message_id = handle_registration(users_list[event.user_id])
+                        message_id =(users_list[event.user_id])
                         users_list[event.user_id].set_id_msg_edit_anketa(message_id)
 
-            # Получение данных для текущего шага
-            elif not users_list[event.user_id].get_step() is None:
-                set_param_anketa(users_list[event.user_id], text)
-                message_id = handle_registration(users_list[event.user_id])
-                users_list[event.user_id].set_id_msg_edit_anketa(message_id)
+                # Получение данных для текущего шага
+                elif not criteria_list[event.user_id].get_step() is None:
+                    set_param_criteria(criteria_list[event.user_id], text)
+                    # message_id = handle_registration(criteria_list[event.user_id])
+                    # criteria_list[event.user_id].set_id_msg_edit_criteria(message_id)
