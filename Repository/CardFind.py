@@ -8,5 +8,5 @@ class CardFind():
         self.gender = arg['sex']
         self.profile = 'https://vk.com/id' + str(arg['id'])
         self.photos = None
-        self.city_id = arg['city']['id']
+        self.city = arg['city']['id']
         self.city_name = arg['city']['title']

@@ -27,7 +27,7 @@ users_list = {}
 realization = os.getenv(key='REALIZATION')
 repository: ABCRepository
 сheckDB: ABCCheckDb
-upload:VkUpload
+upload: VkUpload
 
 
 def handle_start(user_id):
@@ -56,7 +56,6 @@ def handle_start(user_id):
         # Уже есть в списке
         message_id = handle_registration(users_list[event.user_id])
         users_list[event.user_id].set_id_msg_edit_anketa(message_id)
-
 
 
 def handle_registration(user: User):
@@ -245,11 +244,11 @@ def delete_from_list(user: User, repository):
 
 
 if __name__ == '__main__':
+
     upload = VkUpload(vk_session)
     if realization == 'SQL':
         сheckDB = CheckDBSQL()
         repository = SQLRepository()
-
 
     if сheckDB.check_db():
         vk_srv = VKService()
@@ -310,7 +309,6 @@ if __name__ == '__main__':
                         # Открыть список избранных
                         elif action == 'go_to_favorites':
                             go_to_favorites(upload, users_list[event.user_id], repository, token_api)
-                            
 
                      # Просмотр текущего списка
                     elif payload.get('action_view'):

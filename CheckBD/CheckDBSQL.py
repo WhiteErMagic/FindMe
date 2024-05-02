@@ -1,6 +1,7 @@
 import psycopg2
 import os
 from CheckBD.ABCCheckDb import ABCCheckDb
+from dotenv import load_dotenv
 
 
 class CheckDBSQL(ABCCheckDb):
@@ -12,9 +13,13 @@ class CheckDBSQL(ABCCheckDb):
             bool : True - есть база данных, False - нет базы данных
         """
 
-        self.connect = psycopg2.connect(dbname='postgres',
+        load_dotenv()
+        self.connect = psycopg2.connect(
                                         user=os.getenv(key='USER_NAME_DB'),
-                                        password=os.getenv(key='USER_PASSWORD_DB'))
+                                        password=os.getenv(key='USER_PASSWORD_DB'),
+                                        database='postgres',
+                                        host='localhost',
+                                        port=5432)
 
         with self.connect.cursor() as cursor:
             cursor = self.connect.cursor()
@@ -25,7 +30,7 @@ class CheckDBSQL(ABCCheckDb):
                 return False
             else:
                 self.connect.close()
-                self.connect = psycopg2.connect(dbname=self.db_name,
+                self.connect = psycopg2.connect(database=self.db_name,
                                                 user=os.getenv(key='USER_NAME_DB'),
                                                 password=os.getenv(key='USER_PASSWORD_DB'))
                 return True
@@ -36,7 +41,7 @@ class CheckDBSQL(ABCCheckDb):
         """
         if not self.exists_db():
 
-            self.connect = psycopg2.connect(dbname='postgres',
+            self.connect = psycopg2.connect(database=self.db_name,
                                             user=os.getenv(key='USER_NAME_DB'),
                                             password=os.getenv(key='USER_PASSWORD_DB'))
             self.connect.autocommit = True
@@ -50,7 +55,7 @@ class CheckDBSQL(ABCCheckDb):
                     print(e)
                 finally:
                     self.connect.close()
-                    self.connect = psycopg2.connect(dbname=self.db_name,
+                    self.connect = psycopg2.connect(database=self.db_name,
                                                     user=os.getenv(key='USER_NAME_DB'),
                                                     password=os.getenv(key='USER_PASSWORD_DB'))
 
@@ -174,3 +179,6 @@ class CheckDBSQL(ABCCheckDb):
                 self.connect.commit()
 
         self.connect.close()
+
+
+

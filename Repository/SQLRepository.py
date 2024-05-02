@@ -14,7 +14,9 @@ class SQLRepository(ABCRepository):
     def add_user(self, user: User):
         connect = psycopg2.connect(dbname='findme',
                                         user=os.getenv(key='USER_NAME_DB'),
-                                        password=os.getenv(key='USER_PASSWORD_DB'))
+                                        password=os.getenv(key='USER_PASSWORD_DB'),
+                                        port=5432,
+                                        host="/var/run/postgresql")
         with connect.cursor() as cursor:
             #Проверим есть ли пользователь в базе
             sql = """SELECT id FROM users WHERE id=%s;"""
@@ -75,7 +77,9 @@ class SQLRepository(ABCRepository):
     def add_favorites(self, user: User):
         connect = psycopg2.connect(dbname='findme',
                                    user=os.getenv(key='USER_NAME_DB'),
-                                   password=os.getenv(key='USER_PASSWORD_DB'))
+                                   password=os.getenv(key='USER_PASSWORD_DB'),
+                                   port=5432,
+                                   host="/var/run/postgresql")
 
         with connect.cursor() as cursor:
             sql = """INSERT INTO favorites(user_id, first_name, last_name, age, gender_id, profile, 
@@ -151,7 +155,9 @@ class SQLRepository(ABCRepository):
     def delete_favorites(self, user_id, profile):
         connect = psycopg2.connect(dbname='findme',
                                    user=os.getenv(key='USER_NAME_DB'),
-                                   password=os.getenv(key='USER_PASSWORD_DB'))
+                                   password=os.getenv(key='USER_PASSWORD_DB'),
+                                   port=5432,
+                                   host="/var/run/postgresql")
         with connect.cursor() as cursor:
             sql = """DELETE FROM favorites WHERE user_id=%s and profile=%s;"""
             cursor.execute(sql, (user_id, profile))
@@ -162,7 +168,9 @@ class SQLRepository(ABCRepository):
     def delete_exceptions(self, user_id, profile):
         connect = psycopg2.connect(dbname='findme',
                                    user=os.getenv(key='USER_NAME_DB'),
-                                   password=os.getenv(key='USER_PASSWORD_DB'))
+                                   password=os.getenv(key='USER_PASSWORD_DB'),
+                                   port=5432,
+                                   host="/var/run/postgresql")
         with connect.cursor() as cursor:
             sql = """DELETE FROM exceptions WHERE user_id=%s and profile=%s;"""
             cursor.execute(sql, (user_id, profile))
@@ -173,7 +181,9 @@ class SQLRepository(ABCRepository):
     def get_favorites(self, user_id, token):
         connect = psycopg2.connect(dbname='findme',
                                    user=os.getenv(key='USER_NAME_DB'),
-                                   password=os.getenv(key='USER_PASSWORD_DB'))
+                                   password=os.getenv(key='USER_PASSWORD_DB'),
+                                   port=5432,
+                                   host="/var/run/postgresql")
         with connect.cursor() as cursor:
             sql = """SELECT favorites.user_id, favorites.first_name, favorites.last_name, favorites.age, 
                         favorites.gender_id, favorites.profile, favorites.photo1, favorites.photo2, favorites.photo3, 
@@ -209,7 +219,9 @@ class SQLRepository(ABCRepository):
 
         connect = psycopg2.connect(dbname='findme',
                                    user=os.getenv(key='USER_NAME_DB'),
-                                   password=os.getenv(key='USER_PASSWORD_DB'))
+                                   password=os.getenv(key='USER_PASSWORD_DB'),
+                                   port=5432,
+                                   host="/var/run/postgresql")
         with connect.cursor() as cursor:
             sql = """SELECT users.first_name, users.last_name, users.age, users.gender_id , users.about_me,
                         cities.id, cities.name FROM users 
@@ -239,7 +251,9 @@ class SQLRepository(ABCRepository):
     def open_criteria(self, user_id):
         connect = psycopg2.connect(dbname='findme',
                                    user=os.getenv(key='USER_NAME_DB'),
-                                   password=os.getenv(key='USER_PASSWORD_DB'))
+                                   password=os.getenv(key='USER_PASSWORD_DB'),
+                                   port=5432,
+                                   host="/var/run/postgresql")
 
         with connect.cursor() as cursor:
             sql = """SELECT gender_id, status, age_from, age_to, city_id, cities.name, has_photo
