@@ -308,7 +308,6 @@ class ORMRepository(ABCRepository):
             first()
 
         if criteria_query:
-            print('da')
             criteria = Criteria()
             criteria.id = criteria_query.id
             criteria.gender_id =  1 if criteria_query.gender_id == 2 else 1

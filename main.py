@@ -150,11 +150,9 @@ def upload_photo(upload, url):
 
 def find_users(upload, user: User, vk_srv, token):
 
-    print(user.get_criteria())
-
     list_cards = vk_srv.users_search(user.get_criteria(), token_api)
 
-    if not list_cards is None:
+    if not list_cards is None :
         user.set_list_cards(list_cards)
         user.set_index_view(-1)
         view_next_card(upload, user, vk_srv, token)
@@ -190,6 +188,7 @@ def view_back_card(user):
     user.set_index_view(next_index)
 
     photos = user.get_list_cards()[next_index].photos
+
     attachment = []
     for photo in photos:
         photo_struct = upload_photo(upload, photo)
