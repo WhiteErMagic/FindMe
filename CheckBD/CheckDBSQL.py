@@ -32,7 +32,9 @@ class CheckDBSQL(ABCCheckDb):
                 self.connect.close()
                 self.connect = psycopg2.connect(database=self.db_name,
                                                 user=os.getenv(key='USER_NAME_DB'),
-                                                password=os.getenv(key='USER_PASSWORD_DB'))
+                                                password=os.getenv(key='USER_PASSWORD_DB'),
+                                                host='localhost',
+                                                port=5432)
                 return True
 
     def create_db(self):
@@ -43,7 +45,9 @@ class CheckDBSQL(ABCCheckDb):
 
             self.connect = psycopg2.connect(database=self.db_name,
                                             user=os.getenv(key='USER_NAME_DB'),
-                                            password=os.getenv(key='USER_PASSWORD_DB'))
+                                            password=os.getenv(key='USER_PASSWORD_DB'),
+                                            host='localhost',
+                                            port=5432)
             self.connect.autocommit = True
 
             with self.connect.cursor() as cursor:
@@ -57,7 +61,9 @@ class CheckDBSQL(ABCCheckDb):
                     self.connect.close()
                     self.connect = psycopg2.connect(database=self.db_name,
                                                     user=os.getenv(key='USER_NAME_DB'),
-                                                    password=os.getenv(key='USER_PASSWORD_DB'))
+                                                    password=os.getenv(key='USER_PASSWORD_DB'),
+                                                    host='localhost',
+                                                    port=5432)
 
     def exists_tables(self, table_name) -> bool:
         """

@@ -9,10 +9,12 @@ from dotenv import load_dotenv
 import os
 import VK.vk_massages as ms
 from CheckBD.ABCCheckDb import ABCCheckDb
+from CheckBD.CheckDBORM import CheckDBORM
 from CheckBD.CheckDBSQL import CheckDBSQL
 from Repository.ABCRepository import ABCRepository
 from Repository.CardExceptions import CardExceptions
 from Repository.CardFavorites import CardFavorites
+from Repository.ORMRepository import ORMRepository
 from Repository.SQLRepository import SQLRepository
 from User import User
 from VK.VKService import VKService
@@ -147,7 +149,11 @@ def upload_photo(upload, url):
 
 
 def find_users(upload, user: User, vk_srv, token):
+
+    print(user.get_criteria())
+
     list_cards = vk_srv.users_search(user.get_criteria(), token_api)
+
     if not list_cards is None:
         user.set_list_cards(list_cards)
         user.set_index_view(-1)
@@ -206,6 +212,7 @@ def check_user(user_id):
 
 def open_criteria(user: User):
     criteria_dict = repository.open_criteria(user.get_user_id())
+    print(criteria_dict)
     user.set_criteria(criteria_dict)
     #message_criteria = ms.get_message_criteria(user)
     #send_message(message_criteria)
@@ -249,6 +256,10 @@ if __name__ == '__main__':
     if realization == 'SQL':
         сheckDB = CheckDBSQL()
         repository = SQLRepository()
+
+    elif realization == 'ORM':
+        сheckDB = CheckDBORM()
+        repository = ORMRepository()
 
     if сheckDB.check_db():
         vk_srv = VKService()

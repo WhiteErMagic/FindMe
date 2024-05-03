@@ -43,13 +43,14 @@ class VKService:
         :return: результат запроса в виде экземпляра класса Result
         """
         url = 'https://api.vk.com/method/users.search'
+        print(criteria)
         criteria_dict = {
             'sex': criteria['gender_id'],
             'status': criteria['status'],
             'age_from': criteria['age_from'],
             'age_to': criteria['age_to'],
             'has_photo': criteria['has_photo'],
-            'city': criteria['city_id'],
+            'city': criteria['city']['id'],
             'count': 100,
             'access_token': token,
             'fields': 'city, bdate, sex',
@@ -61,10 +62,15 @@ class VKService:
             users_list = []
             items = response.json().get('response').get('items')
             for item in items:
-                temp = CardFind(item)
-                if item.get('bdate'):
-                    temp.age = self.determine_age(item.get('bdate'))
-                users_list.append(temp)
+                # Наличие ключа 'city' в словаре item
+                if 'city' in item:
+                    temp = CardFind(item)
+                    if item.get('bdate'):
+                        # Наличие даты, месяца и года
+                        if len(item.get('bdate').split(sep='.')) == 3:
+                            print(item)
+                            temp.age = self.determine_age(item.get('bdate'))
+                        users_list.append(temp)
 
             if len(users_list) > 0:
                 self.add_photos(users_list[0], token)
